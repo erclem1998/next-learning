@@ -1,4 +1,4 @@
-import { Pokemon } from "@/pokemons";
+import { Pokemon, PokemonsResponse } from "@/src/pokemons";
 import { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -8,11 +8,27 @@ interface Props {
     // searchParams: Promise<any>
 }
 
+//Solo se ejecuta en build time
+export async function generateStaticParams() {
+
+    const data: PokemonsResponse = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=151`)
+        .then(res => res.json());
+
+    const static151Pokemons = data.results.map(pokemon => ({
+        name: pokemon.name,
+    }));
+
+    return static151Pokemons.map(({name}) => ({
+        name: name
+    }))
+    
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     try {
-        const { id: idPokemon } = await params;
-        const { id, name } = await getPokemon(idPokemon);
+        const { name: namePokemon } = await params;
+        const { id, name } = await getPokemon(namePokemon);
         return {
             title: `#${id} - ${name}`,
             description: `Pagina del pokemon ${name}`
@@ -27,10 +43,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 }
 
-const getPokemon = async (id: string): Promise<Pokemon> => {
+const getPokemon = async (name: string): Promise<Pokemon> => {
     try {
-        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`, {
-            cache: 'force-cache'
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`, {
+            // cache: 'force-cache',
+            next: {
+                revalidate: 60 * 60 * 30
+            }
         });
 
         if (!response.ok) {
@@ -39,7 +58,7 @@ const getPokemon = async (id: string): Promise<Pokemon> => {
 
         const pokemon = await response.json();
 
-        console.log('Se cargo: ', pokemon.name)
+        // console.log('Se cargo: ', pokemon.name)
 
         return pokemon;
     } catch {
@@ -50,8 +69,8 @@ const getPokemon = async (id: string): Promise<Pokemon> => {
 
 export default async function PokemonPage({ params }: Props) {
 
-    const { id } = await params;
-    const pokemon = await getPokemon(id);
+    const { name } = await params;
+    const pokemon = await getPokemon(name);
 
 
     return (
@@ -68,6 +87,7 @@ export default async function PokemonPage({ params }: Props) {
                             height={150}
                             alt={`Imagen del pokemon ${pokemon.name}`}
                             className="mb-5"
+                            style={{ width: 'auto', height: '100px' }}
                         />
 
 
