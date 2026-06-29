@@ -1,6 +1,4 @@
 import { PokemonGrid, PokemonsResponse, SimplePokemon } from "@/src/pokemons";
-import { cacheLife, cacheTag, revalidateTag } from "next/cache";
-
 
 export const metadata = {
  title: '151 Pokemos',
