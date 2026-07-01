@@ -4,23 +4,29 @@ import * as yup from 'yup';
 
 export async function GET(request: Request) { 
 
-  const { searchParams } = new URL( request.url )
-  const take = +(searchParams.get('take') ?? '10');
-  const skip = +(searchParams.get('skip') ?? '0');
-  if (isNaN(take)) {
-    return NextResponse.json({
-        message: 'Take tiene que ser un numero'
-    }, { status: 400 })
+  try {
+    const { searchParams } = new URL( request.url )
+    const take = +(searchParams.get('take') ?? '10');
+    const skip = +(searchParams.get('skip') ?? '0');
+    if (isNaN(take)) {
+      return NextResponse.json({
+          message: 'Take tiene que ser un numero'
+      }, { status: 400 })
+    }
+    if (isNaN(skip)) {
+      return NextResponse.json({
+          message: 'Skip tiene que ser un numero'
+      }, { status: 400 })
+    }
+    
+    const todos = await prisma.todo.findMany({ take, skip });
+    
+    return NextResponse.json( todos )
+    
+  } catch (error) {
+    console.log(error)
+    return NextResponse.json('Error al obtener los todos', { status: 500 })
   }
-  if (isNaN(skip)) {
-    return NextResponse.json({
-        message: 'Skip tiene que ser un numero'
-    }, { status: 400 })
-  }
-  
-  const todos = await prisma.todo.findMany({ take, skip });
-  
-  return NextResponse.json( todos )
 }
 
 const postSchema = yup.object({
@@ -43,4 +49,17 @@ export async function POST(request: Request) {
     return NextResponse.json(error, { status: 400 })
   }
 
+}
+
+export async function DELETE(request: Request) { 
+  try {
+    
+    await prisma.todo.deleteMany({
+      where:{ complete: true}
+    })
+    
+    return NextResponse.json( 'Borrados' )
+  } catch (error) {
+    return NextResponse.json(error, { status: 400 })
+  }
 }
